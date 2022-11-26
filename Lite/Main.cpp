@@ -262,9 +262,9 @@ int main()
 		{
 			static std::vector<std::string> allocation_techs =
 			{
-				_("RWX ALLOCATE"),
-				_("RWX OVERWRITE"),
-				_("NO ACCESS ALLOC + PTE MANIPULATION"),
+				_("RWX"),
+				_("PTE"),
+				_("MEME"),
 			};
 			static std::vector<std::string> invoke_techs =
 			{
@@ -360,10 +360,22 @@ int main()
 									}
 								);
 								/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-								//proc->WriteRaw(alloc_base, local_image_base, image.size);
+								//image.header_size
+								proc->WriteRaw(alloc_base, image.new_image.data(), image.size);
 								////call entrypoint
-								//proc->ZeroMem(alloc_base, IMAGE_FIRST_SECTION(image.nt)->VirtualAddress);
-								//free(local_image_base);
+								
+								CreateRemoteThread(
+									OpenProcess(PROCESS_ALL_ACCESS, false, proc->pid),
+									0,
+									0,
+									(LPTHREAD_START_ROUTINE)(alloc_base + image.nt->OptionalHeader.AddressOfEntryPoint),
+									0,
+									0,
+									0
+								);
+
+
+								//proc->FreeMemory(alloc_base);
 								std::cout << _("============================================================================") << std::endl;
 							}
 							else 
