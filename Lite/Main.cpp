@@ -7,7 +7,6 @@ CONSOLE* console = new CONSOLE();
 using BYPASS = CARLOS;
 UPC* proc = new UPC
 (
-	UPC::x64,
 	BYPASS::GetProcessBaseAddress, //base
 	BYPASS::GetPeb, //peb
 	BYPASS::ReadRaw, //read
