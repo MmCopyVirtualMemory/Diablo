@@ -33,6 +33,7 @@ enum DIABLO_COMMAND : int
 	CMD_WRITE,
 	CMD_QUERY,
 	CMD_PATTERN,
+	CMD_INJECT,
 };
 std::map<std::string, DIABLO_COMMAND> cmd_map = 
 {
@@ -47,6 +48,7 @@ std::map<std::string, DIABLO_COMMAND> cmd_map =
 	{"write", CMD_WRITE},
 	{"query", CMD_QUERY},
 	{"pattern", CMD_PATTERN},
+	{"inject", CMD_INJECT},
 };
 
 
@@ -103,6 +105,7 @@ int main()
 			std::cout << _("write                                 : ") << std::endl;
 			std::cout << _("query {address}                       : query basic information about the memory provided") << std::endl;
 			std::cout << _("pattern {module.dll} {aob} {mask}     : finds all occurances of a pattern in the specified module") << std::endl;
+			std::cout << _("inject {path}") << std::endl;
 			break;
 		}
 		case CMD_ATTACH: 
@@ -142,7 +145,7 @@ int main()
 		case CMD_MOD: 
 		{
 			std::wstring wide_mod_name = std::wstring(cmds[1].begin(), cmds[1].end());
-			UPC::MODULE mod = proc->GetModuleInfo(wide_mod_name);
+			UTIL::MODULE mod = proc->GetModuleInfo(wide_mod_name);
 			std::cout << _("============================================================================") << std::endl;
 			std::cout << _("BASE       : 0x") << std::hex << mod.base << std::dec << std::endl;
 			std::cout << _("SIZE       : 0x") << std::hex << mod.size << std::dec << std::endl;
@@ -248,12 +251,17 @@ int main()
 		case CMD_PATTERN: 
 		{
 			std::wstring wide_mod_name = std::wstring(cmds[1].begin(), cmds[1].end());
-			UPC::MODULE mod = proc->GetModuleInfo(wide_mod_name);
-			std::vector<BYTE*> results = proc->FindPattern(mod.base, mod.size, cmds[2], cmds[3]);
-			for (BYTE* result : results)
+			UTIL::MODULE mod = proc->GetModuleInfo(wide_mod_name);
+			std::vector<uint64_t> results = proc->FindPattern(mod.base, mod.size, cmds[2], cmds[3]);
+			for (uint64_t result : results)
 			{
-				std::cout << _("FOUND AT: 0x") << (uint64_t)result << std::endl;
+				std::cout << _("FOUND AT: 0x") << result << std::endl;
 			}
+			break;
+		}
+		case CMD_INJECT: 
+		{
+
 			break;
 		}
 		}
