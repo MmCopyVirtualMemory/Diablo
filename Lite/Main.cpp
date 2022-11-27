@@ -361,20 +361,13 @@ int main()
 								);
 								/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 								//image.header_size
-								proc->WriteRaw(alloc_base, image.new_image.data(), image.size);
+								proc->WriteRaw(alloc_base, image.new_image.data() + image.header_size, image.size - image.header_size);
 								////call entrypoint
 								
 								CreateRemoteThread(
-									OpenProcess(PROCESS_ALL_ACCESS, false, proc->pid),
-									0,
-									0,
-									(LPTHREAD_START_ROUTINE)(alloc_base + image.nt->OptionalHeader.AddressOfEntryPoint),
-									0,
-									0,
-									0
+									OpenProcess(PROCESS_ALL_ACCESS, false, proc->pid), 
+									0, 0, (LPTHREAD_START_ROUTINE)(alloc_base + image.nt->OptionalHeader.AddressOfEntryPoint), 0, 0, 0
 								);
-
-
 								//proc->FreeMemory(alloc_base);
 								std::cout << _("============================================================================") << std::endl;
 							}
