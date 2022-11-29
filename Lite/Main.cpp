@@ -315,144 +315,28 @@ int main()
 								uint64_t freq_called_ptr = 0x00007FF78B435038; //////////////////////////////////////////////////////////////////
 								if (alloc_tech == LOAD_LIBRARY)
 								{
-
-									
-
-
-									std::string dll_path = ansi_dll_path;
-									uint64_t path_ptr = proc->AllocateMemory(dll_path.size(), PAGE_READWRITE);
-									proc->WriteRaw(path_ptr, dll_path.data(), dll_path.size());
-									//invoke
-									typedef struct LOADLIBRARY_DATA
-									{
-										uint64_t retn; //0x0
-										struct
-										{
-											uint64_t mod; //0x8
-										}args;
-										uint64_t entry; //0x10
-										uint64_t done; //0x18
-										//hook data
-										uint64_t ptr; //0x20
-										uint64_t orig; //0x28
-									};
-									//\x48\x83\xEC\x28\x48\x89\x04\x24\x48\x89\x4C\x24\x08\x4C\x89\x7C\x24\x10\x4C\x89\x54\x24\x18\x49\xBF\xFE\xCA\xBE\xBA\xEF\xBE\xAD\xDE\x49\x8B\x47\x18\x49\x8B\x4F\x08\x41\xFF\x57\x10\x49\x89\x07\x4D\x8B\x57\x28\x4C\x89\x54\x24\x20\x49\x8B\x47\x20\x4C\x89\x10\x48\xC7\xC0\x01\x00\x00\x00\x49\x89\x47\x18\x4C\x8B\x54\x24\x18\x4C\x8B\x7C\x24\x10\x48\x8B\x4C\x24\x08\x48\x8B\x04\x24\x48\x83\xC4\x28\xFF\x64\x24\xF8
-									std::vector<BYTE> remote_call_load_library =
-									{ 
-										0x48, 0x83, 0xEC, 0x28, //sub    rsp,0x28
-										0x48, 0x89, 0x04, 0x24, //mov    QWORD PTR [rsp],rax
-										0x48, 0x89, 0x4C, 0x24, 0x08, //mov    QWORD PTR [rsp+0x8],rcx
-										0x4C, 0x89, 0x7C, 0x24, 0x10, //mov    QWORD PTR [rsp+0x10],r15
-										0x4C, 0x89, 0x54, 0x24, 0x18, //mov    QWORD PTR [rsp+0x18],r10
-										0x49, 0xBF, 0xFE, 0xCA, 0xBE, 0xBA, 0xEF, 0xBE, 0xAD, 0xDE, //movabs r15,0xdeadbeefbabecafe
-										0x49, 0x8B, 0x47, 0x18, //mov    rax,QWORD PTR [r15+0x18]
-										0x49, 0x8B, 0x4F, 0x08, //mov    rcx,QWORD PTR [r15+0x8]
-										0x41, 0xFF, 0x57, 0x10, //call   QWORD PTR [r15+0x10]
-										0x49, 0x89, 0x07, //mov    QWORD PTR [r15],rax
-										0x4D, 0x8B, 0x57, 0x28, //mov    r10,QWORD PTR [r15+0x28]
-										0x4C, 0x89, 0x54, 0x24, 0x20, //mov    QWORD PTR [rsp+0x20],r10
-										0x49, 0x8B, 0x47, 0x20, //mov    rax,QWORD PTR [r15+0x20]
-										0x4C, 0x89, 0x10, //mov    QWORD PTR [rax],r10
-										0x48, 0xC7, 0xC0, 0x01, 0x00, 0x00, 0x00, //mov    rax,0x1
-										0x49, 0x89, 0x47, 0x18, //mov    QWORD PTR [r15+0x18],rax
-										0x4C, 0x8B, 0x54, 0x24, 0x18, //mov    r10,QWORD PTR [rsp+0x18]
-										0x4C, 0x8B, 0x7C, 0x24, 0x10, //mov    r15,QWORD PTR [rsp+0x10]
-										0x48, 0x8B, 0x4C, 0x24, 0x08, //mov    rcx,QWORD PTR [rsp+0x8]
-										0x48, 0x8B, 0x04, 0x24, //mov    rax,QWORD PTR [rsp]
-										0x48, 0x83, 0xC4, 0x28, //add    rsp,0x28
-										0xFF, 0x64, 0x24, 0xF8 //jmp    QWORD PTR [rsp-0x8]
-									};
-									DWORD data_offset = 0x17 + 0x2;
-									uint64_t alloc_base = proc->AllocateMemory(sizeof(LOADLIBRARY_DATA) + remote_call_load_library.size(), PAGE_EXECUTE_READWRITE);
-									uint64_t data_base = alloc_base;
-									uint64_t shell_base = alloc_base + sizeof(LOADLIBRARY_DATA);
-									*(uint64_t*)(remote_call_load_library.data() + data_offset) = data_base;
-									LOADLIBRARY_DATA data =
-									{
-										0,
-										{ path_ptr },
-										(uint64_t)LoadLibraryA,
-										0,
-										freq_called_ptr,
-										proc->Read<uint64_t>(freq_called_ptr)
-									};
-
-									proc->WriteRaw(shell_base, remote_call_load_library.data(), remote_call_load_library.size());
-									proc->Write<LOADLIBRARY_DATA>(data_base, data);
-									proc->Write<uint64_t>(freq_called_ptr, shell_base);
-									
-									
-									
-									while (!data.done) //dllmain is done
-									{
-										
-										data = proc->Read<LOADLIBRARY_DATA>(data_base);
-									}
-									Sleep(100); //wait for execution to be directed away from the shellcode before adiosing da memory
-									proc->FreeMemory(path_ptr);
-									proc->FreeMemory(alloc_base);
+									uint64_t shell_base = proc->AllocateMemory(REMOTECALL_LOADLIBRARYA_SHELLSIZE, PAGE_EXECUTE_READWRITE);
+									proc->RemoteCallLoadLibraryA((uint64_t)LoadLibraryA, ansi_dll_path, shell_base, freq_called_ptr);
+									proc->FreeMemory(shell_base);
 								}
 								else //manual map with different allocations
 								{
-									typedef struct DLLMAIN_DATA 
-									{
-										uint64_t retn; //0x0
-										struct 
-										{
-											uint64_t hmod; //0x8
-											uint64_t reason;//0x10
-											uint64_t reserved; //0x18
-										}args;
-										uint64_t entry;//0x20
-										uint64_t done; //0x28
-
-										//hook data
-										uint64_t ptr; //0x30
-										uint64_t orig;
-									};
-									std::vector<BYTE> remote_call_dll_main =
-									{ 
-										0x48, 0x83, 0xEC, 0x30,			//sub    rsp,0x30
-										0x48, 0x89, 0x04, 0x24,			//mov    QWORD PTR [rsp],rax
-										0x48, 0x89, 0x4C, 0x24, 0x08,	//mov    QWORD PTR [rsp+0x8],rcx
-										0x48, 0x89, 0x54, 0x24, 0x10,	//mov    QWORD PTR[rsp + 0x10],rdx
-										0x4C, 0x89, 0x44, 0x24, 0x18,	//mov    QWORD PTR[rsp + 0x18],r8
-										0x4C, 0x89, 0x4C, 0x24, 0x20,	//mov    QWORD PTR [rsp+0x20],r9
-										0x49, 0xB9,						//movabs r9,0xdeadbeefbabecafe
-										0xFE, 0xCA, 0xBE, 0xBA, 0xEF, 0xBE, 0xAD, 0xDE, //dllentry
-										0x49, 0x8B, 0x49, 0x08,			//mov    rcx,QWORD PTR [r9+0x8]
-										0x49, 0x8B, 0x51, 0x10,			//mov    rdx,QWORD PTR [r9+0x10]
-										0x4D, 0x8B, 0x41, 0x18,			//mov    r8,QWORD PTR [r9+0x18]
-										0x41, 0xFF, 0x51, 0x20,			//call   QWORD PTR [r9+0x20]
-										0x49, 0x89, 0x01, 
-										0x4C, 0x8B, 0x4C, 0x24, 0x20,	//mov    r9,QWORD PTR [rsp+0x20]
-										0x4C, 0x8B, 0x44, 0x24, 0x18,	//mov    r8,QWORD PTR [rsp+0x18]
-										0x48, 0x8B, 0x54, 0x24, 0x10,	//mov    rdx,QWORD PTR [rsp+0x10]
-										0x48, 0x8B, 0x4C, 0x24, 0x08,	//mov    rcx,QWORD PTR [rsp+0x8]
-										0x48, 0x8B, 0x04, 0x24,			//mov    rax,QWORD PTR [rsp]
-										0x48, 0x83, 0xC4, 0x30			//add    rsp,0x30
-
-										//TODO: call the original function
-										//put orig ptr on the stack before deconstruct
-										//jmp to that spot on the stack after deconstruct
-									};
-									DWORD entry_offset = 0x1c + 0x2;
 
 
-
+									
 
 									uint64_t alloc_base = {};
 									switch (alloc_tech)
 									{
 									case 0: //rwx alloc (default)
 									{
-										alloc_base = proc->AllocateMemory(image.size + sizeof(DLLMAIN_DATA) + remote_call_dll_main.size(), PAGE_EXECUTE_READWRITE);
+										alloc_base = proc->AllocateMemory(image.size + REMOTECALL_DLLMAIN_SHELLSIZE, PAGE_EXECUTE_READWRITE);
 										break;
 									}
 									case 1: //pte nx + rw swap
 									{
-										alloc_base = proc->AllocateMemory(image.size + sizeof(DLLMAIN_DATA) + remote_call_dll_main.size(), PAGE_NOACCESS);
-										for (uint64_t cursor = alloc_base; cursor < alloc_base + image.size + remote_call_dll_main.size() + sizeof(DLLMAIN_DATA); cursor += PAGE_SIZE)
+										alloc_base = proc->AllocateMemory(image.size + REMOTECALL_DLLMAIN_SHELLSIZE, PAGE_NOACCESS);
+										for (uint64_t cursor = alloc_base; cursor < alloc_base + image.size + REMOTECALL_DLLMAIN_SHELLSIZE; cursor += PAGE_SIZE)
 										{
 											//set all ptes to rwx
 										}
@@ -498,33 +382,12 @@ int main()
 									);
 									proc->WriteRaw(alloc_base, image.new_image.data() + image.header_size, image.size - image.header_size);
 									//call entrypoint
+
 									uint64_t entry_point = alloc_base + image.nt->OptionalHeader.AddressOfEntryPoint;
-									uint64_t data_base = alloc_base + image.size;
-									uint64_t shell_base = data_base + sizeof(DLLMAIN_DATA);
-									//build shellcode
-									*(uint64_t*)(remote_call_dll_main.data() + entry_offset) = data_base;
-									
-									
-									
-									
-									
-									DLLMAIN_DATA data = 
-									{
-										0, //retn
-										{ alloc_base, 1, 0 },
-										entry_point,
-										0, //done
-										freq_called_ptr,
-										proc->Read<uint64_t>(freq_called_ptr)
-									};
-									proc->WriteRaw(shell_base, remote_call_dll_main.data(), remote_call_dll_main.size());
-									proc->Write<DLLMAIN_DATA>(data_base, data);
-									proc->Write<uint64_t>(freq_called_ptr, shell_base);
-									while (!data.done) //dllmain is done
-									{
-										Sleep(20);
-										data = proc->Read<DLLMAIN_DATA>(data_base); 
-									}
+
+									proc->RemoteCallDllMain(entry_point, alloc_base, DLL_PROCESS_ATTACH, 0, 
+										alloc_base + image.nt->OptionalHeader.SizeOfImage, freq_called_ptr);
+
 
 
 									if (alloc_base)
