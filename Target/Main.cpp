@@ -16,8 +16,10 @@ int main()
 		std::cout << &dataPtr << " -> " << dataPtr << std::endl;
 		dataPtr();
 
+		
 
 
-		Sleep(1000);
+		void* mem = VirtualAlloc(0, 0x1000, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+		VirtualFree(mem, 0, MEM_RELEASE);
 	}
 }

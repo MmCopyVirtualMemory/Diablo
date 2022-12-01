@@ -1,11 +1,11 @@
 #include "../../4/!FourCore/Controller/Upc.h"
-#include "../../4/!FourCore/Driver/Charlie.h"
+#include "../../4/!FourCore/Driver/Carlos.h"
 #include "../../4/!FourCore/Utility/Console.h"
 #include "../../4/!FourCore/Utility/Image.h"
 #include <iostream>
 CONSOLE* console = new CONSOLE();
 
-using BYPASS = CHARLIE;
+using BYPASS = CARLOS;
 UPC* proc = new UPC
 (
 	BYPASS::GetProcessBaseAddress, //base
@@ -51,7 +51,6 @@ std::map<std::string, DIABLO_COMMAND> cmd_map =
 	{"pattern", CMD_PATTERN},
 	{"inject", CMD_INJECT},
 };
-
 
 int main() 
 {
@@ -132,12 +131,12 @@ int main()
 			proc->LoopModules(
 				[&](NT::LDR_DATA_TABLE_ENTRY64 current_module)
 				{
-					wchar_t dll_name[100];
+					wchar_t dll_name[MAX_PATH];
 					proc->ReadRaw((uint64_t)current_module.BaseDllName.Buffer, &dll_name, sizeof(dll_name));
 
 					std::wstring wide_mod_name = dll_name;
-					std::string asci_mod_name = std::string(wide_mod_name.begin(), wide_mod_name.end());
-					std::cout << asci_mod_name << _(" 0x") << std::hex << current_module.DllBase << _(" SIZE: 0x") << current_module.SizeOfImage << _(" EP: 0x") << current_module.EntryPoint << std::dec << std::endl;
+					std::string ansi_mod_name = std::string(wide_mod_name.begin(), wide_mod_name.end());
+					std::cout << ansi_mod_name << _(" 0x") << std::hex << current_module.DllBase << _(" SIZE: 0x") << current_module.SizeOfImage << _(" EP: 0x") << current_module.EntryPoint << std::dec << std::endl;
 				});
 			std::cout << _("============================================================================") << std::endl;
 
@@ -251,11 +250,11 @@ int main()
 		{
 			std::wstring wide_mod_name = std::wstring(cmds[1].begin(), cmds[1].end());
 			UTIL::MODULE mod = proc->GetModuleInfo(wide_mod_name, false);
-			std::vector<uint64_t> results = proc->FindPattern(mod.base, mod.size, cmds[2], cmds[3]);
+			/*std::vector<uint64_t> results = proc->FindPattern(mod.base, mod.size, cmds[2], cmds[3]);
 			for (uint64_t result : results)
 			{
 				std::cout << _("FOUND AT: 0x") << result << std::endl;
-			}
+			}*/
 			break;
 		}
 		case CMD_INJECT: 
@@ -312,88 +311,82 @@ int main()
 							std::cin >> confirm_inject;
 							if (confirm_inject == _("Y"))
 							{
-								uint64_t freq_called_ptr = 0x00007FF78B435038; //////////////////////////////////////////////////////////////////
+								uint64_t freq_called_ptr = proc->GetModuleInfo(_(L"kernel32.dll"), false).base + 0x81810;// VirtualAlloc
 								if (alloc_tech == LOAD_LIBRARY)
 								{
 									uint64_t shell_base = proc->AllocateMemory(REMOTECALL_LOADLIBRARYA_SHELLSIZE, PAGE_EXECUTE_READWRITE);
-									proc->RemoteCallLoadLibraryA((uint64_t)LoadLibraryA, ansi_dll_path, shell_base, freq_called_ptr);
+									proc->RemoteCallLoadLibraryA((uint64_t)LoadLibraryA, ansi_dll_path, shell_base, freq_called_ptr, true);
 									proc->FreeMemory(shell_base);
 								}
 								else //manual map with different allocations
 								{
-
-
-									
-
 									uint64_t alloc_base = {};
 									switch (alloc_tech)
 									{
-									case 0: //rwx alloc (default)
+									case RWX_ALLOC: //rwx alloc (default)
 									{
-										alloc_base = proc->AllocateMemory(image.size + REMOTECALL_DLLMAIN_SHELLSIZE, PAGE_EXECUTE_READWRITE);
+										alloc_base = proc->AllocateMemory(image.size + PAGE_SIZE + REMOTECALL_SHELL_SIZE, PAGE_EXECUTE_READWRITE);
 										break;
 									}
-									case 1: //pte nx + rw swap
+									case PTE_RWNX_SWAP: //pte nx + rw swap
 									{
-										alloc_base = proc->AllocateMemory(image.size + REMOTECALL_DLLMAIN_SHELLSIZE, PAGE_NOACCESS);
-										for (uint64_t cursor = alloc_base; cursor < alloc_base + image.size + REMOTECALL_DLLMAIN_SHELLSIZE; cursor += PAGE_SIZE)
+										alloc_base = proc->AllocateMemory(image.size + PAGE_SIZE + REMOTECALL_SHELL_SIZE, PAGE_NOACCESS);
+										for (uint64_t cursor = alloc_base; cursor < alloc_base + image.size; cursor += PAGE_SIZE)
 										{
 											//set all ptes to rwx
 										}
 										break;
 									}
+									case RWX_MEME: //rwx signed dll overwrite
+									{
+										break;
+									}
 									}
 									std::cout << _("MAP : 0x") << std::hex << alloc_base << _(" | 0x") << image.size << std::dec << std::endl;
-									image.FixRelocs(alloc_base); 
+									
+									////WORK IN PROGRESS
+									/*image.FixRelocs(alloc_base); 
 									image.FixImports(
 										[&](std::string mod_name, std::string proc_name) -> uint64_t
 										{
 											std::wstring wide_mod_name = std::wstring(mod_name.begin(), mod_name.end());
 											uint64_t exported_function = proc->GetModuleInfo(wide_mod_name, true).exports[proc_name];
-											if (exported_function)
+											if (!exported_function)
 											{
-												std::cout << "FOUND IMPORT: " << mod_name << _(" ") << proc_name << _(" 0x") << std::hex << exported_function << std::dec << std::endl;
-												return exported_function;
+												std::cout << _("LIBRARY NOT PRESENT: ") << mod_name << std::endl;
+												std::cout << _("BRUTEFORCE LOAD LIBRARY WITH SHELLCODE? [Y/N]: ");
+												std::string confirm_import;
+												std::cin >> confirm_import;
+												if (confirm_import == _("Y"))
+												{
+													uint64_t shell_base = proc->AllocateMemory(REMOTECALL_LOADLIBRARYA_SHELLSIZE, PAGE_EXECUTE_READWRITE);
+													uint64_t mod_base = proc->RemoteCallLoadLibraryA((uint64_t)LoadLibraryA, mod_name, shell_base, freq_called_ptr);
+													proc->FreeMemory(shell_base);
+													exported_function = proc->GetModuleInfo(wide_mod_name, true).exports[proc_name];
+												}
 											}
-											std::cout << _("IMPORT FAILED: ") << mod_name << _(" ") << proc_name << std::endl;
-											std::cout << _("BRUTEFORCE/IGNORE IMPORT?") << std::endl;
-											std::cout << _("[Y/N/I]: ");
-											std::string confirm_import;
-											std::cin >> confirm_import;
-											if (confirm_import == "I")
-											{
-												return 0xdeadbeef;
-											}
-											if (confirm_import == "Y")
-											{
-												//force call remote loadlibrary and use the module base
-												std::string dll_path = mod_name;
-												uint64_t path_ptr = proc->AllocateMemory(dll_path.size(), PAGE_READWRITE);
-												proc->WriteRaw(path_ptr, dll_path.data(), dll_path.size());
-
-												//remote load library
-
-
-
-												return proc->GetModuleInfo(wide_mod_name, true).exports[proc_name];
-											}
-											return NULL; //failed to find it
+											std::cout << _("IMPORT: ") << mod_name << _(" ") << proc_name << _(" 0x") << std::hex << exported_function << std::dec << std::endl;
+											return exported_function;
 										}
-									);
-									proc->WriteRaw(alloc_base, image.new_image.data() + image.header_size, image.size - image.header_size);
+									);*/
+									proc->WriteRaw(alloc_base, image.new_image.data()/* + image.header_size*/, image.size/* - image.header_size*/);
 									//call entrypoint
-
-									uint64_t entry_point = alloc_base + image.nt->OptionalHeader.AddressOfEntryPoint;
-
-									proc->RemoteCallDllMain(entry_point, alloc_base, DLL_PROCESS_ATTACH, 0, 
-										alloc_base + image.nt->OptionalHeader.SizeOfImage, freq_called_ptr);
-
-
-
-									if (alloc_base)
+									uint64_t dll_main_shell = alloc_base + image.size;
+									uint64_t remcrt = dll_main_shell + PAGE_SIZE;
+									uint64_t data_base = proc->AllocateMemory(sizeof(UPC::MANUAL_MAPPING_DATA), PAGE_READWRITE);
+									UPC::MANUAL_MAPPING_DATA mmap_data = {};
+									mmap_data.getProcAddress = GetProcAddress;
+									mmap_data.loadLibraryA = LoadLibraryA;
+									mmap_data.dllMain = (decltype(mmap_data.dllMain))(alloc_base + image.entry);
+									mmap_data.params.base = alloc_base;
+									mmap_data.params.reason = DLL_PROCESS_ATTACH;
+									mmap_data.params.reserved = 0;
+									proc->Write<UPC::MANUAL_MAPPING_DATA>(data_base, mmap_data);
+									proc->WriteRaw(dll_main_shell, UPC::DllMainShellcode, PAGE_SIZE);
+									proc->RemoteCallShellcode(dll_main_shell, data_base, remcrt, freq_called_ptr, true);
+									if ((alloc_tech == RWX_ALLOC || alloc_tech == PTE_RWNX_SWAP) && alloc_base)
 									{
-										std::cout << _("FREE MEMORY?") << std::endl;
-										std::cout << _("[Y/N]: ");
+										std::cout << _("FREE MEMORY? [Y/N]: ");
 										std::string confirm_free;
 										std::cin >> confirm_free;
 										if (confirm_free == _("Y"))
@@ -431,6 +424,38 @@ int main()
 	Sleep(-1);
 }
 
+////remcall dllmain w/ self restoring ptr
+//sub rsp, 0x30
+//mov [rsp + 0x0], rax
+//mov [rsp + 0x8], rcx
+//mov [rsp + 0x10], rdx
+//mov [rsp + 0x18], r8
+//mov [rsp + 0x20], r15
+//mov r15, 0xdeadbeefbabecafe
+//
+//mov rcx, [r15 + 0x8]
+//mov rdx, [r15 + 0x10]
+//mov r8, [r15 + 0x18]
+//call [r15 + 0x20]
+//mov [r15], rax
+//
+//mov r10, [r15 + 0x38]
+//mov [rsp + 0x28], r10 
+//mov rax, [r15 + 0x30]
+//mov [rax], r10
+//
+//mov rax, 1
+//mov [r15 + 0x28], rax
+//
+//mov r15, [rsp + 0x20]
+//mov r8, [rsp + 0x18]
+//mov rdx, [rsp + 0x10]
+//mov rcx, [rsp + 0x8]
+//mov rax, [rsp + 0x0]
+//add rsp, 0x30
+//jmp [rsp - 0x8]
+
+
 //remote load library with self restoring hook
 //sub rsp, 0x28
 //mov [rsp + 0x0], rax
@@ -461,27 +486,3 @@ int main()
 //jmp [rsp - 0x8]
 
 
-
-////remote call dll main
-//sub rsp, 0x30
-//
-//mov [rsp + 0x0], rax
-//mov [rsp + 0x8], rcx
-//mov [rsp + 0x10], rdx
-//mov [rsp + 0x18], r8
-//mov [rsp + 0x20], r9
-//
-//mov r9, 0xdeadbeefbabecafe; structure ptr
-//mov rcx, [r9 + 0x8]
-//mov rdx, [r9 + 0x10]
-//mov r8, [r9 + 0x18]
-//call [r9 + 0x20]
-//mov [r9], rax
-//
-//mov r9, [rsp + 0x20]
-//mov r8, [rsp + 0x18]
-//mov rdx, [rsp + 0x10]
-//mov rcx, [rsp + 0x8]
-//mov rax, [rsp + 0x0]
-//
-//add rsp, 0x30
