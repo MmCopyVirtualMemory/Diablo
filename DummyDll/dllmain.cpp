@@ -2,32 +2,28 @@
 #include "pch.h"
 #include <iostream>
 
-/*
+using U64 = unsigned long long;
+using U32 = unsigned long;
 
-*/
 
 
 //https://stackoverflow.com/questions/1279292/how-do-i-create-a-win32-dll-without-a-dependency-on-the-c-runtime
-uint64_t APIENTRY DllMain(HMODULE hModule,
-    DWORD  ul_reason_for_call,
-    LPVOID lpReserved
+uint64_t APIENTRY DllMain(U64 hModule,
+    U32  ul_reason_for_call,
+    U64 lpReserved
                      )
 {
-    std::cout << "HELLO FROM DLLMAIN!" << std::endl;
-    while (!GetAsyncKeyState(VK_END)) 
-    {
-        Sleep(1);
-    }
-
-
+    
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH: 
     {
-        std::cout << "HELLO FROM ATTACH!" << std::endl;
-        //std::cout << URLDownloadToFile << std::endl;
+
+        MessageBoxA(0, "Hello Lil Bro", "Hi!", 0);
         
-        Sleep(2000);
+
+
+
     }
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
