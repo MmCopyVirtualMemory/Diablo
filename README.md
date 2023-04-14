@@ -1,5 +1,5 @@
 # Diablo
-***Reverse engineering program using a driver for memory operations. ***
+**Reverse engineering program using a driver for memory operations. **
 
 **As of now I haven't decided to post the library that I use for process handling so I will leave that up to the reader to add themselves. As of now, the "Full" version development has been abandoned. I had it working with most of the same features but I decided that the lightweight console version better suited my needs so I never continued developing the full version**
 
