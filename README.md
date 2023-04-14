@@ -51,7 +51,7 @@ When the function returns, the shellcode will restore the values in the register
 Finally the shellcode will jump to the original function.
 ```
 This implementation is very handy and it has close to zero drawbacks. Firstly, the method of invocation can be universalized by using a function that almost every program uses (VirtualAlloc). I have yet to find a program worth injecting into that doesn't allocate some memory although if such program is found, it is very easy to find another pointer to do this with. Secondly, the program continues its execution as if nothing ever happened. The sequence in which events happen is very important for this to work properly but once it works, it does its job very well. Perhaps the biggest bonus of using a method like this is that it requires no extra thread creation or patching of a readonly section which makes it incredibly stealthy.
-https://media.giphy.com/media/dT8aZn3iwR81FX2BeV/giphy.gif
+![giphy](https://user-images.githubusercontent.com/88007716/231949814-8351fe3c-713c-4088-bcf4-f839bebefd35.gif)
 Here is my implementation of a OnceHook:
 ```cpp
 U64 RemoteCallLoadLibraryA(U64 lla_addr, std::string dll_path,
