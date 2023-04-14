@@ -39,6 +39,7 @@ Use the command "query" followed by the address that you wish to inquire about. 
 Use the command "inject" followed by a number (injection method enumerator) to inject a dll into the target process. 
 
 (Example dll being injected into notepad for a nice visual. The entry isn't called and I don't have a better program to test on right now so this is the best I can do image wise)
+
 ![image](https://user-images.githubusercontent.com/88007716/231949350-f5c87651-9a11-46a4-88b9-0c94c1a2b92d.png)
 
 I have spent the most time on this by far and because I am proud of the shellcode I wrote, I will write more about it. The memory allocation used is nothing special and it's made to be modular so I won't focus on that. The cherry on top of this post is the shellcode that I wrote to call the entry point (well actually which calls cruz's shellcode which calls the entry point). This shellcode uses what I will call a OnceHook (which I will attempt to coin as a real thing). This concept of a once hook is rather simple in thinking but slightly more challenging in application:
@@ -51,7 +52,9 @@ When the function returns, the shellcode will restore the values in the register
 Finally the shellcode will jump to the original function.
 ```
 This implementation is very handy and it has close to zero drawbacks. Firstly, the method of invocation can be universalized by using a function that almost every program uses (VirtualAlloc). I have yet to find a program worth injecting into that doesn't allocate some memory although if such program is found, it is very easy to find another pointer to do this with. Secondly, the program continues its execution as if nothing ever happened. The sequence in which events happen is very important for this to work properly but once it works, it does its job very well. Perhaps the biggest bonus of using a method like this is that it requires no extra thread creation or patching of a readonly section which makes it incredibly stealthy.
+
 ![giphy](https://user-images.githubusercontent.com/88007716/231949814-8351fe3c-713c-4088-bcf4-f839bebefd35.gif)
+
 Here is my implementation of a OnceHook:
 ```cpp
 U64 RemoteCallLoadLibraryA(U64 lla_addr, std::string dll_path,
