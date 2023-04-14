@@ -143,3 +143,6 @@ bool RemoteCallShellcode(U64 func, U64 a1,
 Example of one of my more *nefarious* dlls being injected into a "protected" process and being used to draw the funny numbers on the screen:
 
 ![image](https://user-images.githubusercontent.com/88007716/231946158-f5d826dc-b383-40fe-98e1-80563ef6d7fb.png)
+
+# Conclusion
+Thanks for reading this massive wall of text. If you found this useful, learned something, or just enjoyed reading, don't hesitate to reach out to me and let me know about it!
