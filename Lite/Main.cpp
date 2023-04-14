@@ -5,7 +5,6 @@
 #include <iostream>
 //required
 #include "../../4Est/!Forest/Ida.h"
-#include "../../4Est/!Forest/Image.h"
 //driver
 #include "../../4Est/!Forest/Driver/Carlos.h"
 #define BYPASS CARLOS
@@ -26,8 +25,6 @@ enum DIABLO_COMMAND : int
 	CMD_INFO,
 	CMD_MOD,
 	CMD_DUMP,
-	CMD_READ,
-	CMD_WRITE,
 	CMD_QUERY,
 	CMD_INJECT,
 };
@@ -40,8 +37,6 @@ std::map<std::string, DIABLO_COMMAND> cmd_map =
 	{"info", CMD_INFO},
 	{"mod", CMD_MOD},
 	{"dump", CMD_DUMP},
-	{"read", CMD_READ},
-	{"write", CMD_WRITE},
 	{"query", CMD_QUERY},
 	{"inject", CMD_INJECT},
 };
@@ -93,12 +88,10 @@ int main()
 			std::cout << _("attach {process.exe}                  : attaches to the specified process") << std::endl;
 			std::cout << _("info                                  : displays process info") << std::endl;
 			std::cout << _("mod {module.dll}                      : displays module info") << std::endl;
-			std::cout << _("dump {module.dll} {dump_name}         : dumps the module to disk") << std::endl;
-			std::cout << _("read                                  : ") << std::endl;
-			std::cout << _("write                                 : ") << std::endl;
+			std::cout << _("dump {module.dll}                     : dumps the module to disk") << std::endl;
 			std::cout << _("query {address}                       : query basic information about the memory provided") << std::endl;
 			std::cout << _("pattern {module.dll} {aob} {mask}     : finds all occurances of a pattern in the specified module") << std::endl;
-			std::cout << _("inject {method 1->5}") << std::endl;
+			std::cout << _("inject {method 1->5}                  : injects a dll into the target program") << std::endl;
 			break;
 		}
 		case CMD_ATTACH: 
@@ -159,14 +152,6 @@ int main()
 		case CMD_DUMP: 
 		{
 			proc.DumpModule(cmds[1], cmds[1] + _(".bin"));
-			break;
-		}
-		case CMD_READ: 
-		{
-			break;
-		}
-		case CMD_WRITE:
-		{
 			break;
 		}
 		case CMD_QUERY:
@@ -297,7 +282,7 @@ int main()
 										alloc_base = proc.AllocateMemory(image.size + PAGE_SIZE + PAGE_SIZE, PAGE_EXECUTE_READWRITE);
 										break;
 									}
-									case INJECT_TECH::PTE_RWNX_SWAP: //pte nx + rw swap
+									case INJECT_TECH::PTE_RWNX_SWAP: //pte nx + rw swap todo
 									{
 										alloc_base = proc.AllocateMemory(image.size + PAGE_SIZE + PAGE_SIZE, PAGE_NOACCESS);
 										for (U64 cursor = alloc_base; cursor < alloc_base + image.size + PAGE_SIZE + PAGE_SIZE; cursor += PAGE_SIZE)
@@ -306,7 +291,7 @@ int main()
 										}
 										break;
 									}
-									case INJECT_TECH::RWX_MEME: //rwx signed dll overwrite
+									case INJECT_TECH::RWX_MEME: //rwx signed dll overwrite todo
 									{
 										break;
 									}
@@ -318,7 +303,7 @@ int main()
 									U64 dll_main_shell = alloc_base + image.size;
 									U64 remcrt = dll_main_shell + PAGE_SIZE;
 									U64 data_base = proc.AllocateMemory(sizeof(PROCESS::MANUAL_MAPPING_DATA), PAGE_READWRITE);
-									PROCESS::MANUAL_MAPPING_DATA mmap_data = {};
+									PROCESS::MANUAL_MAPPING_DATA mmap_data = {}; //thanks cruz
 									mmap_data.gpa = (U64)GetProcAddress;
 									mmap_data.lla = (U64)LoadLibraryA;
 									mmap_data.dllmain = alloc_base + image.entry;
@@ -327,14 +312,6 @@ int main()
 									mmap_data.params.reserved = 0;
 									proc.Write<PROCESS::MANUAL_MAPPING_DATA>(data_base, mmap_data);
 									proc.WriteRaw(dll_main_shell, PROCESS::DllMainShellcode, PAGE_SIZE);
-
-
-									
-
-
-
-
-
 									proc.RemoteCallShellcode(dll_main_shell, data_base, remcrt, freq_called_ptr, true);
 									if ((alloc_tech == INJECT_TECH::RWX_ALLOC || alloc_tech == INJECT_TECH::PTE_RWNX_SWAP) && alloc_base)
 									{
@@ -375,66 +352,3 @@ int main()
 	}
 	Sleep(-1);
 }
-
-////remcall dllmain w/ self restoring ptr
-//sub rsp, 0x30
-//mov [rsp + 0x0], rax
-//mov [rsp + 0x8], rcx
-//mov [rsp + 0x10], rdx
-//mov [rsp + 0x18], r8
-//mov [rsp + 0x20], r15
-//mov r15, 0xdeadbeefbabecafe
-//
-//mov rcx, [r15 + 0x8]
-//mov rdx, [r15 + 0x10]
-//mov r8, [r15 + 0x18]
-//call [r15 + 0x20]
-//mov [r15], rax
-//
-//mov r10, [r15 + 0x38]
-//mov [rsp + 0x28], r10 
-//mov rax, [r15 + 0x30]
-//mov [rax], r10
-//
-//mov rax, 1
-//mov [r15 + 0x28], rax
-//
-//mov r15, [rsp + 0x20]
-//mov r8, [rsp + 0x18]
-//mov rdx, [rsp + 0x10]
-//mov rcx, [rsp + 0x8]
-//mov rax, [rsp + 0x0]
-//add rsp, 0x30
-//jmp [rsp - 0x8]
-
-
-//remote load library with self restoring hook
-//sub rsp, 0x28
-//mov [rsp + 0x0], rax
-//mov [rsp + 0x8], rcx
-//mov [rsp + 0x10], r15
-//mov [rsp + 0x18], r10
-//mov r15, 0xdeadbeefbabecafe
-//
-//mov rax, [r15 + 0x18]
-//
-//mov rcx, [r15 + 0x8]
-//call [r15 + 0x10]
-//mov [r15], rax
-//
-//mov r10, [r15 + 0x28]
-//mov [rsp + 0x20], r10
-//mov rax, [r15 + 0x20]
-//mov [rax], r10
-//
-//mov rax, 1
-//mov [r15 + 0x18], rax
-//
-//mov r10, [rsp + 0x18]
-//mov r15, [rsp + 0x10]
-//mov rcx, [rsp + 0x8]
-//mov rax, [rsp + 0x0]
-//add rsp, 0x28
-//jmp [rsp - 0x8]
-
-
