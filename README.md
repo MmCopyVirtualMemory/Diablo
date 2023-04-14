@@ -57,7 +57,7 @@ This implementation is very handy and it has close to zero drawbacks. Firstly, t
 
 ![giphy](https://user-images.githubusercontent.com/88007716/231949814-8351fe3c-713c-4088-bcf4-f839bebefd35.gif)
 
-Here is my implementation of a OnceHook:
+Here is my implementation of a OnceHook which resides in my process controller class:
 ```cpp
 U64 RemoteCallLoadLibraryA(U64 lla_addr, std::string dll_path,
 	U64 rwx_page, U64 freq_called_ptr, bool readonly = false)
