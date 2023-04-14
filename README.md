@@ -13,14 +13,24 @@ Use the command "info" to display all module info about the target process as sh
 
 ## Module Info
 Use the command "mod" followed by the module name to display all of the info about a specified module within the target process.
-- Module Base
-- Module Size
-- All Sections [Name, Start Address, Size, Info and Page Protection]
+* Module Base
+* Module Size
+* All Sections [Name, Start Address, Size, Info and Page Protection]
 ![image](https://user-images.githubusercontent.com/88007716/231944628-b932f2c8-ee89-40e0-951e-8cbb9438678c.png)
 
 ## Dump Module
-Use the command "dump" followed by the module name you wish to dump. This will dump the module to the same directory as the executable.
+Use the command "dump" followed by the module name you wish to dump. This will dump the module to the same directory as the executable. This can be useful when reversing anything packed. I have used this against a few protected processes to reverse engineer them.
+![image](https://user-images.githubusercontent.com/88007716/231945194-f5661ef0-5718-4611-ac4a-f48d36298cba.png)
+
 ## Query Memory
+Use the command "query" followed by the address that you wish to inquire about. The following information will be displayed from MEMORY_BASIC_INFORMATION.
+* Allocation Base
+* Allocation Protection
+* Allocation Size
+* Page Protection
+* Allocation Type
+![image](https://user-images.githubusercontent.com/88007716/231945352-38459f7e-41e7-4029-8485-25c69a29f24b.png)
+
 ## Inject DLL
 
 
