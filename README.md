@@ -3,7 +3,7 @@ Reverse engineering program using a driver for memory operations.
 
 # Disclaimer
 
-**This is an unfinished product as most everything I write. There are likely many problems that my eyes have yet to catch. If you see one, a PR is very welcome. As of now I haven't decided to post the library that I use for process handling so I will leave that up to the reader to add themselves. As of now, the "Full" version development has been abandoned. I had it working with most of the same features but I decided that the lightweight console version better suited my needs so I never continued developing the full version. Regardless, if anyone is interested, it is included but the following writeup only covers the lite version.**
+**This is an unfinished product as most everything I write. There are likely many problems that my eyes have yet to catch. If you see one, a PR is very welcome. As of now I haven't decided to post the library that I use for process handling so I will leave that up to the reader to add themselves. Because of this, the project is not designed to be built and ran out of the box. As of now, the "Full" version development has been abandoned. I had it working with most of the same features but I decided that the lightweight console version better suited my needs so I never continued developing the full version. Regardless, if anyone is interested, it is included but the following writeup only covers the lite version.**
 
 # Features
 
