@@ -146,5 +146,14 @@ Example of one of my more *nefarious* dlls being injected into a "protected" pro
 
 ![image](https://user-images.githubusercontent.com/88007716/231946158-f5d826dc-b383-40fe-98e1-80563ef6d7fb.png)
 
+
+Example Use Case:
+I noticed that I could not directly dump Prospect-Win64-Shipping.exe because my dump was filled with blank space. With Diablo however, I was able to realize that pages in the ".text" section did not match the allocation type. This prompted me to rewrite my process dumping code to account for these protected pages. The result afterwards is a nice dump.
+
+![image](https://user-images.githubusercontent.com/88007716/234742999-f4f1838e-6c35-44bd-97b2-57c55a73244a.png)
+
+![image](https://user-images.githubusercontent.com/88007716/234743375-5dc32733-9ba5-4c10-8571-cbb53cc94ae1.png)
+
+
 # Conclusion
 Thanks for reading this massive wall of text. If you found this useful, learned something, or just enjoyed reading, don't hesitate to reach out to me and let me know about it!
